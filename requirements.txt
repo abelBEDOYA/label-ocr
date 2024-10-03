@@ -1,0 +1,7 @@
+paddleocr==2.6.1.0   # PaddleOCR versión compatible
+matplotlib==3.8.0    # Para crear gráficos y plots
+opencv-python==4.8.0.74  # OpenCV para manejar la cámara y procesar imágenes
+numpy==1.23.5        # Operaciones matemáticas y matrices
+python-Levenshtein==0.21.1  # Cálculo de distancias Levenshtein
+pandas==2.1.1        # Manejo de estructuras de datos como DataFrame
+seaborn==0.12.2      # Librería para gráficos estadísticos (sobre matplotlib)
