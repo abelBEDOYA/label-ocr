@@ -8,7 +8,7 @@ fields = ['part n', 'cantidad', 'proveedor', 'descripcion',
 labelocr = LabelORCR(fields)
 
 cap = cv2.VideoCapture(0)
-matrix = False
+matrix = True
 if not cap.isOpened():
     print("Error: No se pudo abrir la cámara.")
     exit()
