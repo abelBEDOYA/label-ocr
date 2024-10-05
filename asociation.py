@@ -200,17 +200,18 @@ class LabelORCR:
             print(df_resultados.index.tolist())
             # Encontramos el nombre de la columna con el valor máximo en esa fila
             column_value = df_resultados.loc[det_field].idxmax()
-            print('hola1')
             valor_maximo = df_resultados.loc[det_field].max()
-            print('hola2')
-            if valor_maximo>0.02:
-                # Añadimos la pareja (index_value, column_value) a la lista de parejas
-                posibles_det_value = [det_value for det_value in det_values if det_value[1][0]==column_value]
-                if len(posibles_det_value)==1:
-                    det_value = posibles_det_value[0]
+            try:
+                if valor_maximo>0.02:
+                    # Añadimos la pareja (index_value, column_value) a la lista de parejas
+                    posibles_det_value = [det_value for det_value in det_values if det_value[1][0]==column_value]
+                    if len(posibles_det_value)==1:
+                        det_value = posibles_det_value[0]
+                    else:
+                        det_value = None
                 else:
                     det_value = None
-            else:
+            except:
                 det_value = None
             asociados[k]['det_value'] = det_value
         return asociados
