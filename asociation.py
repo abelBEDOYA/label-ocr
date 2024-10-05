@@ -32,14 +32,14 @@ class LabelORCR:
     def inferenciar_imagen(self, frame):
         self.last_frame = frame
         self.last_detections = self.ocr_model.ocr(frame)[0]
-        print(self.last_detections)
+        # print(self.last_detections)
         if self.last_detections is None:
             self.asociados = self.asociados_default
             self.last_df = None
             return 
         asociados_, det_field, det_value = self._asociar_cadenas(self.last_detections)
         self.last_df = self._recorrer_arrays_matriz_categorica(det_field, det_value)
-        print(self.last_df)
+        # print(self.last_df)
         # if self.last_df is None:
         #     self.asociados = self.asociados_default
         #     self.last_df = None
@@ -181,8 +181,6 @@ class LabelORCR:
                 # Aplicar la métrica a cada par de elementos (array1[i], array2[j])
                 matriz_resultados[i, j] = self._compute_M(det_field[i], det_value[j])
         # Crear un DataFrame de pandas, usando array1 como índices (filas) y array2 como columnas
-        print('det_value', det_value)
-        print('det_field', det_field)
         df_resultados = pd.DataFrame(matriz_resultados, index=[det[1][0] if det is not None else None for det in det_field], 
                                      columns=[det[1][0] for det in det_value])
         
@@ -191,13 +189,13 @@ class LabelORCR:
     def _obtener_parejas_valor_maximo(self, asociados, det_fields, det_values, df_resultados):
         # Iteramos por cada fila en el DataFrame
         if df_resultados.empty:
-            print("Error: df_resultados está vacío")
+            # print("Error: df_resultados está vacío")
             return self.asociados_default
-        print('det_values', det_values)
+        # print('det_values', det_values)
         for k, v in asociados.items():
             det_field = v['det_field'][1][0]
-            print('det_field', det_field)
-            print(df_resultados.index.tolist())
+            # print('det_field', det_field)
+            # print(df_resultados.index.tolist())
             # Encontramos el nombre de la columna con el valor máximo en esa fila
             column_value = df_resultados.loc[det_field].idxmax()
             valor_maximo = df_resultados.loc[det_field].max()

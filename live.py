@@ -1,13 +1,15 @@
 import cv2
 from asociation import LabelORCR
 import matplotlib.pyplot as plt
+import time
+
 
 fields = ['part n', 'cantidad', 'proveedor', 'descripcion', 
             'lote q', 'serie(s)', 'ref. pdl', 'op:', 'fecha']
 
 labelocr = LabelORCR(fields)
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(2)
 matrix = True
 if not cap.isOpened():
     print("Error: No se pudo abrir la cámara.")
@@ -24,7 +26,11 @@ while True:
     if not ret:
         print("Error: No se pudo recibir frame. Saliendo...")
         break
+    t0 = time.time()
     labelocr.inferenciar_imagen(frame)
+    t1= time.time()
+
+    print('deta tiempo: ', t1-t0)
     img_det = labelocr.dibujar_inferencia()
     # Muestra el frame en una ventana llamada 'Webcam'
     cv2.imshow('Webcam', img_det)
