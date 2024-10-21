@@ -12,23 +12,28 @@ import seaborn as sns
 
 
 class LabelORCR:
-    def __init__(self, fields):
+    def __init__(self, fields: list[str], 
+                 ignore_caps: bool = True, 
+                 rel_levenshtein_thres: float= 0.4,
+                 verbose: bool = True):
         """
         Initialize the FormParser with a list of field words.
 
         :param fields: List of field names or keywords to search for in OCR results.
         """
         self.fields = fields  # List of field words
+        self.ignore_caps = ignore_caps
+        self.rel_levenshtein_thres = rel_levenshtein_thres
+        self.verbose = verbose
         self.ocr_model = PaddleOCR(lang='en',cls=True)
         self.field_detections = {}  # Mapping from field to its detected OCR result
         self.unmatched_detections = []  # OCR detections not matched to any field
         self.field_values = {}  # Mapping from field to associated values
         self.last_df = None
         self.last_frame = None
+        self.asociados={}
         self.asociados_default = {field: {'det_field': None, 'det_value': None} for field in self.fields}
 
-
-    
     def inferenciar_imagen(self, frame):
         self.last_frame = frame
         self.last_detections = self.ocr_model.ocr(frame)[0]
@@ -39,19 +44,12 @@ class LabelORCR:
             return 
         asociados_, det_field, det_value = self._asociar_cadenas(self.last_detections)
         self.last_df = self._recorrer_arrays_matriz_categorica(det_field, det_value)
-        # print(self.last_df)
-        # if self.last_df is None:
-        #     self.asociados = self.asociados_default
-        #     self.last_df = None
-        #     return
-        self.asociados = self._obtener_parejas_valor_maximo(asociados_, det_field, det_value, self.last_df)
-        # result = self._get_dict()
-        # return result
-        
-    def _get_dict(self):
-        print(self.asociados)
-        return 5
+        if self.verbose:
+            print(self.last_df)
 
+        self.asociados = self._obtener_parejas_valor_maximo(asociados_, det_field, det_value, self.last_df)
+        return self.asociados
+        
     def dibujar_detecciones(self, color = (0,0,255)):
         # Asegúrate de que la imagen esté en formato correcto (BGR)
         imagen_copy = self.last_frame.copy()
@@ -85,21 +83,39 @@ class LabelORCR:
 
 
     def _asociar_cadenas(self,detecciones):
-        asociaciones = {field: {'det_field': None, 'det_value': None} for field in self.fields}
+        """Busca matcheos entre los campos del formulario/eiqeuta fotografiada (fields) 
+        con los string detectados con el OCR (detecciones).
+        Return:
+            asociaciones: dict = estructura de la categorización en field o values, aunque soloc on los campos llenos.
+            list = con las detecciones que son fields
+            detecciones: list = con las demas detecciones"""
         
+        asociaciones = {field: {'det_field': None, 'det_value': None} for field in self.fields}
+        if self.verbose: print(f'Umbral de distancia: {self.rel_levenshtein_thres}')
         for field in self.fields:
             mejor_match = None
             mejor_distancia = float('inf')  # Empezamos con una distancia muy grande
             if len(detecciones)>0:
                 for det in detecciones:
                     cadena_m = det[1][0]
-                    distancia = Levenshtein.distance(field, cadena_m)
-                    
-                    if distancia < mejor_distancia:
-                        mejor_distancia = distancia
-                        mejor_match = det
-                detecciones.remove(mejor_match)
-            asociaciones[field]['det_field'] = mejor_match
+                    if self.ignore_caps:
+                        field_lower = field.lower()
+                        cadena_m_lower = cadena_m.lower()
+                    distancia = Levenshtein.distance(field_lower, cadena_m_lower)
+                    longitud_max = max(len(field), len(cadena_m))
+                    distancia_m = distancia/longitud_max
+                    if distancia_m < mejor_distancia:
+                        mejor_distancia = distancia_m
+                        if distancia_m<self.rel_levenshtein_thres:
+                            mejor_match = det
+                if self.verbose:
+                    print('Mejor parecido: \n \t Field:', field, '\n \t Deteccion: ', mejor_match[1][0] if mejor_match is not None else mejor_match, '\n \t Distancia: ', mejor_distancia)
+                if mejor_match:
+                    detecciones.remove(mejor_match)
+            if mejor_match:
+                asociaciones[field]['det_field'] = mejor_match
+            else:
+                asociaciones[field]['det_field'] = [[[-100,-100],[-120,-100],[-100,-120],[-120,-120]], (field, 0.0)]
         
         return asociaciones, [det['det_field'] for det in asociaciones.values() if det['det_field'] is not None], detecciones
 
@@ -112,6 +128,8 @@ class LabelORCR:
         :param bbox2: Bounding box of the second detection (x, y, w, h)
         :return: Computed metric M
         """
+        if field is None or value is None:
+            return -5
         # print('field: ',field[1][0], 'value: ', value[1][0])
         # Unpack bounding boxes
         esquinas = field[0]
