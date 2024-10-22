@@ -4,13 +4,16 @@ import matplotlib.pyplot as plt
 import time
 
 
-fields = ['part n', 'cantidad', 'proveedor', 'descripcion', 
-            'lote q', 'serie(s)', 'ref. pdl', 'op:', 'fecha']
+fields = ['part n (P)', 'cantidad (Q)', 'proveedor (V)', 'descripcion', 
+            'lote (H)', 'serie(s)', 'ref. pld', 'op:', 'fecha']
+metric_criteria = 'debajo'
+proximity_threshold = 0.02
+labelocr = LabelORCR(fields, ignore_caps=True, verbose=False, 
+                     metric_criteria = metric_criteria, 
+                     proximity_threshold = proximity_threshold)
 
-labelocr = LabelORCR(fields)
-
-cap = cv2.VideoCapture(2)
-matrix = True
+cap = cv2.VideoCapture(0)
+matrix = False
 if not cap.isOpened():
     print("Error: No se pudo abrir la cámara.")
     exit()

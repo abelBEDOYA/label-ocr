@@ -15,7 +15,9 @@ class LabelORCR:
     def __init__(self, fields: list[str], 
                  ignore_caps: bool = True, 
                  rel_levenshtein_thres: float= 0.4,
-                 verbose: bool = True):
+                 verbose: bool = True,
+                 metric_criteria: str = 'debajo',
+                 proximity_threshold = 0.02):
         """
         Initialize the FormParser with a list of field words.
 
@@ -25,6 +27,8 @@ class LabelORCR:
         self.ignore_caps = ignore_caps
         self.rel_levenshtein_thres = rel_levenshtein_thres
         self.verbose = verbose
+        self.metric_criteria = metric_criteria # debajo o deerecha o debajo_derecha
+        self.proximity_threshold = proximity_threshold
         self.ocr_model = PaddleOCR(lang='en',cls=True)
         self.field_detections = {}  # Mapping from field to its detected OCR result
         self.unmatched_detections = []  # OCR detections not matched to any field
@@ -119,8 +123,7 @@ class LabelORCR:
         
         return asociaciones, [det['det_field'] for det in asociaciones.values() if det['det_field'] is not None], detecciones
 
-    @staticmethod
-    def _compute_M(field, value):
+    def _compute_M(self, field, value):
         """
         Compute the association metric M between two bounding boxes.
 
@@ -186,9 +189,13 @@ class LabelORCR:
         por_izda = 1 if center_x2>x11 else -1
         # print('por_encima', por_encima)
         # print('-.----------------------')
-
-        # Compute metric M
-        M = por_encima*(max(h1,h2)*IoU_x / (dy + epsilon)) + por_izda*por_encima*(max(w1,w2)*IoU_y / (dx + epsilon))
+        M = 0
+        if self.metric_criteria == 'debajo' or self.metric_criteria=='debajo_derecha':
+            M += por_encima*(max(h1,h2)*IoU_x / (dy + epsilon))
+        if self.metric_criteria == 'derecha' or self.metric_criteria=='debajo_derecha':
+            M += por_izda*por_encima*(max(w1,w2)*IoU_y / (dx + epsilon))
+        if M==0:
+            M = por_izda*por_encima*(max(w1,w2)*IoU_y / (dx + epsilon)) + por_encima*(max(h1,h2)*IoU_x / (dy + epsilon))
         return M
 
     def _recorrer_arrays_matriz_categorica(self, det_field, det_value):
@@ -218,7 +225,7 @@ class LabelORCR:
             column_value = df_resultados.loc[det_field].idxmax()
             valor_maximo = df_resultados.loc[det_field].max()
             try:
-                if valor_maximo>0.02:
+                if valor_maximo>self.proximity_threshold:
                     # Añadimos la pareja (index_value, column_value) a la lista de parejas
                     posibles_det_value = [det_value for det_value in det_values if det_value[1][0]==column_value]
                     if len(posibles_det_value)==1:
