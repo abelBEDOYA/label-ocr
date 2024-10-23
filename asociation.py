@@ -194,7 +194,7 @@ class LabelORCR:
             M += por_encima*(max(h1,h2)*IoU_x / (dy + epsilon))
         if self.metric_criteria == 'derecha' or self.metric_criteria=='debajo_derecha':
             M += por_izda*por_encima*(max(w1,w2)*IoU_y / (dx + epsilon))
-        if M==0:
+        if self.metric_criteria not in ['debajo', 'derecha', 'debajo_derecha']:
             M = por_izda*por_encima*(max(w1,w2)*IoU_y / (dx + epsilon)) + por_encima*(max(h1,h2)*IoU_x / (dy + epsilon))
         return M
 
